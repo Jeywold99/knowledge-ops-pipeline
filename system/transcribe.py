@@ -14,7 +14,7 @@ Outputs (in ../03_Transcripts/<RESOURCE-ID>/):
 
 API key resolution order:
     1. GROQ_API_KEY environment variable (preferred)
-    2. the key hardcoded in the Note Taker's server.js (fallback)
+    2. GROQ_API_KEY=... in the project's .env file (not committed)
 """
 
 import sys, os, re, json
@@ -23,17 +23,19 @@ from groq import Groq
 HERE = os.path.dirname(os.path.abspath(__file__))          # ...\system
 ROOT = os.path.dirname(HERE)                               # project root
 TRANSCRIPTS = os.path.join(ROOT, "03_Transcripts")
-SERVER = r"D:\Projects - Personal\projects\note-taker\server.js"
+ENV_FILE = os.path.join(ROOT, ".env")
 
 
 def get_key():
     env = os.environ.get("GROQ_API_KEY")
     if env:
         return env.strip()
-    with open(SERVER, "r", encoding="utf-8") as f:
-        m = re.search(r"GROQ_API_KEY\s*=\s*'([^']+)'", f.read())
+    m = None
+    if os.path.exists(ENV_FILE):
+        with open(ENV_FILE, "r", encoding="utf-8") as f:
+            m = re.search(r"^GROQ_API_KEY\s*=\s*(\S+)", f.read(), re.M)
     if not m:
-        sys.exit("ERROR: set GROQ_API_KEY or add it to server.js")
+        sys.exit("ERROR: set GROQ_API_KEY or add it to .env")
     return m.group(1)
 
 

@@ -20,7 +20,7 @@ const SOURCE_DIR = path.join(ROOT, '02_Source-Files');
 const TRANSCRIPTS_DIR = path.join(ROOT, '03_Transcripts');
 const LIBRARY_DIR = path.join(ROOT, '04_Knowledge-Library');
 const TRACKER = path.join(ROOT, '05_Master-Tracker', 'Master-Tracker.csv');
-const NOTE_TAKER_SERVER = path.join(ROOT, '..', 'projects', 'note-taker', 'server.js');
+const ENV_FILE = path.join(ROOT, '.env'); // GROQ_API_KEY=..., not committed
 
 for (const d of [SOURCE_DIR, TRANSCRIPTS_DIR, LIBRARY_DIR]) fs.mkdirSync(d, { recursive: true });
 
@@ -32,11 +32,10 @@ const DOC_MODEL = 'llama-3.3-70b-versatile'; // change if Groq renames the model
 function getGroqKey() {
   if (process.env.GROQ_API_KEY) return process.env.GROQ_API_KEY.trim();
   try {
-    const src = fs.readFileSync(NOTE_TAKER_SERVER, 'utf8');
-    const m = src.match(/GROQ_API_KEY\s*=\s*'([^']+)'/);
+    const m = fs.readFileSync(ENV_FILE, 'utf8').match(/^GROQ_API_KEY\s*=\s*(\S+)/m);
     if (m) return m[1];
   } catch (_) {}
-  throw new Error('No Groq key: set GROQ_API_KEY or add it to the Note Taker server.js');
+  throw new Error('No Groq key: set GROQ_API_KEY or add it to .env');
 }
 const groq = new Groq({ apiKey: getGroqKey() });
 

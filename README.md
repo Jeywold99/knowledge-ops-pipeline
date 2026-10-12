@@ -54,8 +54,8 @@ hints (Resource ID, source, guest, date), and click **Process** — the page sho
 Upload → Transcribe → Structure → Save stepper, then opens the finished document and adds
 it to the library gallery and the master tracker automatically.
 
-> Uses the same Groq key as the CLI (`GROQ_API_KEY`, or the Note Taker's `server.js`
-> fallback). The doc is auto-drafted by an LLM — it gets you ~90% there and flags what it's
+> Uses the same Groq key as the CLI (`GROQ_API_KEY`, or a `GROQ_API_KEY=...` line in the project's `.env`
+> file). The doc is auto-drafted by an LLM — it gets you ~90% there and flags what it's
 > unsure of; a human still gives each doc a final polish before approval.
 
 ---
