@@ -1,0 +1,11 @@
+node_modules/
+.env
+.env.*
+__pycache__/
+# Raw third-party audio and full transcripts stay local (copyright)
+02_Source-Files/*
+!02_Source-Files/README.md
+03_Transcripts/
+# Private application material
+application-notes/
+webapp/uploads/

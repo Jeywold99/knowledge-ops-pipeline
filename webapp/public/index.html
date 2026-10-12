@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Knowledge Base Pipeline</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --panel:#ffffff; --ink:#1a1f2b; --muted:#66707e;
+    --line:#e6e9ef; --brand:#3b5bdb; --brand-soft:#eaeefb; --ok:#1e9e6a; --err:#d64545;
+    --shadow:0 1px 3px rgba(20,25,40,.06),0 6px 24px rgba(20,25,40,.06);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.55 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+  header{padding:22px 28px;border-bottom:1px solid var(--line);background:var(--panel);display:flex;align-items:center;gap:14px}
+  header .logo{width:38px;height:38px;border-radius:9px;background:linear-gradient(135deg,var(--brand),#7048e8);display:grid;place-items:center;color:#fff;font-size:20px}
+  header h1{font-size:18px;margin:0}
+  header p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .wrap{max-width:1200px;margin:26px auto;padding:0 24px;display:grid;grid-template-columns:360px 1fr;gap:24px;align-items:start}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);min-width:0}
+  .card h2{font-size:14px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:0;padding:16px 18px;border-bottom:1px solid var(--line)}
+  .card .body{padding:18px}
+  label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin:12px 0 5px}
+  input,select{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;font:inherit;background:#fff;color:var(--ink)}
+  input[type=file]{padding:8px;background:#fbfbfd}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  button{cursor:pointer;border:0;border-radius:10px;font:inherit;font-weight:600}
+  .btn-primary{background:var(--brand);color:#fff;padding:11px 16px;width:100%;margin-top:16px}
+  .btn-primary:disabled{opacity:.55;cursor:not-allowed}
+  .hint{font-size:12px;color:var(--muted);margin-top:8px}
+  /* stepper */
+  .steps{list-style:none;margin:14px 0 0;padding:0}
+  .steps li{display:flex;align-items:center;gap:10px;padding:7px 0;color:var(--muted);font-size:13px}
+  .steps li .dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--line);flex:0 0 auto;display:grid;place-items:center;font-size:11px}
+  .steps li.active{color:var(--ink);font-weight:600}
+  .steps li.active .dot{border-color:var(--brand);background:var(--brand-soft)}
+  .steps li.done .dot{border-color:var(--ok);background:var(--ok);color:#fff}
+  .steps li.err .dot{border-color:var(--err);background:var(--err);color:#fff}
+  .statusbox{margin-top:12px;font-size:13px;color:var(--muted);min-height:18px}
+  .statusbox.err{color:var(--err)}
+  /* library */
+  .lib-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line)}
+  .lib-head h2{border:0;padding:0}
+  .lib-controls{display:flex;align-items:center;gap:12px}
+  .count{font-size:12px;color:var(--muted)}
+  .toggle{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  .seg{background:#fff;color:var(--muted);padding:6px 13px;font-size:13px;border-radius:0}
+  .seg.active{background:var(--brand);color:#fff}
+  /* tracker table */
+  .tracker-wrap{padding:14px 18px 18px}
+  .tbl-tools{display:flex;justify-content:flex-end;margin-bottom:8px}
+  .tbl-tools a{font-size:12px;color:var(--brand);text-decoration:none}
+  .tbl-tools a:hover{text-decoration:underline}
+  .tscroll{overflow-x:auto;max-width:100%;border:1px solid var(--line);border-radius:10px}
+  table.tracker{border-collapse:collapse;width:100%;font-size:12px;white-space:nowrap}
+  table.tracker th,table.tracker td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+  table.tracker th{background:#f6f7f9;font-weight:600;position:sticky;top:0}
+  table.tracker tr:hover td{background:#f8f9fd}
+  table.tracker .openbtn{background:var(--brand-soft);color:var(--brand);padding:4px 11px;border-radius:6px;font-size:11px;font-weight:600}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;padding:18px}
+  .doc{border:1px solid var(--line);border-radius:12px;padding:14px;cursor:pointer;transition:.15s;background:#fff}
+  .doc:hover{border-color:var(--brand);box-shadow:var(--shadow);transform:translateY(-1px)}
+  .doc .id{font-size:11px;font-weight:700;color:var(--brand);letter-spacing:.03em}
+  .doc .t{font-weight:600;margin:6px 0 8px;line-height:1.35}
+  .doc .m{font-size:12px;color:var(--muted)}
+  .tag{display:inline-block;font-size:11px;background:var(--brand-soft);color:var(--brand);padding:2px 8px;border-radius:20px;margin-top:8px}
+  .empty{padding:40px 18px;text-align:center;color:var(--muted)}
+  /* reader */
+  .overlay{position:fixed;inset:0;background:rgba(20,25,40,.45);display:none;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto;z-index:20}
+  .overlay.open{display:flex}
+  .reader{background:#fff;max-width:820px;width:100%;border-radius:14px;box-shadow:var(--shadow)}
+  .reader .top{display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff;border-radius:14px 14px 0 0}
+  .reader .top button{background:#f1f3f7;padding:7px 12px}
+  .tabs{display:flex;align-items:center;gap:6px;padding:10px 20px;border-bottom:1px solid var(--line);position:sticky;top:53px;background:#fff;flex-wrap:wrap}
+  .tab{background:#f1f3f7;color:var(--muted);padding:7px 14px;font-size:13px}
+  .tab.active{background:var(--brand);color:#fff}
+  .tab:disabled{opacity:.4;cursor:not-allowed}
+  .downloads{margin-left:auto;display:flex;gap:14px}
+  .downloads a{font-size:12px;color:var(--brand);text-decoration:none}
+  .downloads a:hover{text-decoration:underline}
+  .reader .content{padding:24px 30px}
+  .content pre.tx{white-space:pre-wrap;word-break:break-word;font:13px/1.7 ui-monospace,Consolas,Menlo,monospace;background:#f8f9fd;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:0}
+  .content h1{font-size:24px;margin:.2em 0 .1em}
+  .content h3{color:var(--muted);font-weight:600;margin-top:0}
+  .content h2{font-size:17px;margin-top:1.6em;padding-top:.5em;border-top:1px solid var(--line)}
+  .content table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13px}
+  .content th,.content td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+  .content th{background:#f6f7f9}
+  .content blockquote{border-left:3px solid var(--brand);margin:10px 0;padding:4px 14px;color:#333;background:#f8f9fd}
+  .content code{background:#f1f3f7;padding:1px 5px;border-radius:5px;font-size:.9em}
+  @media(max-width:860px){.wrap{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+  <header>
+    <div class="logo">📚</div>
+    <div>
+      <h1>Knowledge Base Pipeline</h1>
+      <p>Upload a recording → auto-transcribe → generate a clean, tagged document → browse the library.</p>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <!-- Upload -->
+    <section class="card">
+      <h2>Add a resource</h2>
+      <div class="body">
+        <form id="form">
+          <label>Audio / video file</label>
+          <input type="file" name="audio" id="file" accept="audio/*,video/*" required />
+
+          <div class="row">
+            <div><label>Resource ID</label><input name="resourceId" placeholder="GYLF-EP343" /></div>
+            <div><label>Date</label><input name="date" placeholder="2026-07-31" /></div>
+          </div>
+          <label>Source</label>
+          <input name="source" placeholder="Grow Your Law Firm (PILMA)" />
+          <div class="row">
+            <div><label>Host</label><input name="host" placeholder="Ken Hardison" /></div>
+            <div><label>Guest / Speaker</label><input name="guest" placeholder="Jane Doe" /></div>
+          </div>
+          <label>Category (optional)</label>
+          <input name="category" placeholder="Technology & Innovation › AI Adoption" />
+
+          <button class="btn-primary" id="go" type="submit">Process resource</button>
+          <p class="hint">Fields are optional hints — the pipeline infers the rest and flags anything uncertain.</p>
+        </form>
+
+        <ul class="steps" id="steps" hidden>
+          <li data-k="upload"><span class="dot">1</span> Upload</li>
+          <li data-k="transcribe"><span class="dot">2</span> Transcribe (Whisper)</li>
+          <li data-k="structure"><span class="dot">3</span> Structure (LLM)</li>
+          <li data-k="library"><span class="dot">4</span> Save to library</li>
+        </ul>
+        <div class="statusbox" id="status"></div>
+      </div>
+    </section>
+
+    <!-- Library -->
+    <section class="card">
+      <div class="lib-head">
+        <h2>Knowledge Library</h2>
+        <div class="lib-controls">
+          <span class="count" id="count"></span>
+          <div class="toggle">
+            <button id="tabGallery" class="seg active">Gallery</button>
+            <button id="tabTracker" class="seg">Tracker</button>
+          </div>
+        </div>
+      </div>
+      <div id="grid" class="grid"></div>
+      <div class="empty" id="empty" hidden>No documents yet — process a resource to see it here.</div>
+      <div id="trackerView" hidden></div>
+    </section>
+  </div>
+
+  <!-- Reader -->
+  <div class="overlay" id="overlay">
+    <div class="reader">
+      <div class="top">
+        <strong id="readerTitle"></strong>
+        <button onclick="closeReader()">Close ✕</button>
+      </div>
+      <div class="tabs" id="tabs">
+        <button class="tab active" data-tab="doc">Document</button>
+        <button class="tab" data-tab="raw">Transcript</button>
+        <button class="tab" data-tab="ts">Timestamped</button>
+        <span class="downloads" id="downloads"></span>
+      </div>
+      <div class="content" id="readerContent"></div>
+    </div>
+  </div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+
+let libCount = 0;
+let currentView = 'gallery';
+
+function showView(v){
+  currentView = v;
+  const gal = v === 'gallery';
+  $('#tabGallery').classList.toggle('active', gal);
+  $('#tabTracker').classList.toggle('active', !gal);
+  $('#grid').hidden = !gal;
+  $('#empty').hidden = !(gal && libCount === 0);
+  $('#trackerView').hidden = gal;
+}
+$('#tabGallery').addEventListener('click', ()=> showView('gallery'));
+$('#tabTracker').addEventListener('click', ()=>{ showView('tracker'); loadTracker(); });
+
+async function loadTracker(){
+  const t = await (await fetch('/api/tracker')).json();
+  const wrap = $('#trackerView');
+  if(!t.headers.length){ wrap.innerHTML = '<div class="empty">Tracker is empty — process a resource to log it here.</div>'; return; }
+  const linkIdx = t.headers.indexOf('Link');
+  const thead = '<tr>' + t.headers.map(h=>`<th>${escapeHtml(h)}</th>`).join('') + '</tr>';
+  const body = t.rows.map(r => '<tr>' + r.map((c,i)=>{
+    if(i === linkIdx && c){ const file = c.split('/').pop(); return `<td><button class="openbtn" data-file="${escapeHtml(file)}">Open</button></td>`; }
+    return `<td>${escapeHtml(c)}</td>`;
+  }).join('') + '</tr>').join('');
+  wrap.innerHTML = `<div class="tracker-wrap">
+    <div class="tbl-tools"><a href="/api/tracker-file" download>⬇ Master-Tracker.csv</a></div>
+    <div class="tscroll"><table class="tracker"><thead>${thead}</thead><tbody>${body}</tbody></table></div>
+  </div>`;
+  wrap.querySelectorAll('.openbtn').forEach(b => b.addEventListener('click', ()=> openDoc(b.dataset.file)));
+}
+
+async function loadLibrary(){
+  const items = await (await fetch('/api/library')).json();
+  const grid = $('#grid'), empty = $('#empty');
+  libCount = items.length;
+  $('#count').textContent = items.length ? items.length + ' document' + (items.length>1?'s':'') : '';
+  grid.innerHTML = '';
+  empty.hidden = !(currentView === 'gallery' && items.length === 0);
+  for(const it of items){
+    const el = document.createElement('div');
+    el.className = 'doc';
+    el.onclick = () => openDoc(it.file);
+    el.innerHTML = `<div class="id">${it.id||''}</div>
+      <div class="t">${it.title||it.file}</div>
+      <div class="m">${[it.source, it.guest, it.date].filter(Boolean).join(' · ')}</div>
+      ${it.category ? `<span class="tag">${it.category}</span>` : ''}`;
+    grid.appendChild(el);
+  }
+}
+
+const reader = { html:'', raw:'', ts:'', id:'' };
+const escapeHtml = (s) => (s||'').replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+async function openDoc(file){
+  const d = await (await fetch('/api/doc?file=' + encodeURIComponent(file))).json();
+  reader.html = d.html; reader.id = d.id || '';
+  $('#readerTitle').textContent = d.title || file;
+
+  let t = { raw:'', timestamped:'', hasSegments:false };
+  try { t = await (await fetch('/api/transcript?id=' + encodeURIComponent(reader.id))).json(); } catch {}
+  reader.raw = t.raw || ''; reader.ts = t.timestamped || '';
+
+  const dl = [];
+  const link = (kind, label) => `<a href="/api/transcript-file?id=${encodeURIComponent(reader.id)}&kind=${kind}" download>⬇ ${label}</a>`;
+  if (reader.raw) dl.push(link('raw','transcript.txt'));
+  if (reader.ts) dl.push(link('timestamped','timestamped.txt'));
+  if (t.hasSegments) dl.push(link('segments','segments.json'));
+  $('#downloads').innerHTML = dl.join('');
+
+  const hasT = !!(reader.raw || reader.ts);
+  document.querySelectorAll('#tabs .tab').forEach(b => { if (b.dataset.tab !== 'doc') b.disabled = !hasT; });
+  showTab('doc');
+  $('#overlay').classList.add('open');
+}
+
+function showTab(tab){
+  document.querySelectorAll('#tabs .tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  const c = $('#readerContent');
+  if (tab === 'doc') c.innerHTML = reader.html;
+  else if (tab === 'raw') c.innerHTML = '<pre class="tx">' + escapeHtml(reader.raw || '(no transcript found)') + '</pre>';
+  else c.innerHTML = '<pre class="tx">' + escapeHtml(reader.ts || '(no timestamped transcript found)') + '</pre>';
+}
+document.querySelectorAll('#tabs .tab').forEach(b => b.addEventListener('click', () => { if (!b.disabled) showTab(b.dataset.tab); }));
+
+function closeReader(){ $('#overlay').classList.remove('open'); }
+$('#overlay').addEventListener('click', (e)=>{ if(e.target.id==='overlay') closeReader(); });
+
+// stepper helpers
+const STAGE_KEY = (s) => {
+  s = s.toLowerCase();
+  if (s.includes('transcrib')) return 'transcribe';
+  if (s.includes('structur')) return 'structure';
+  if (s.includes('sav') || s.includes('librar')) return 'library';
+  if (s.includes('done')) return 'done';
+  return 'upload';
+};
+function paintSteps(key, error){
+  const order = ['upload','transcribe','structure','library'];
+  const idx = order.indexOf(key);
+  document.querySelectorAll('#steps li').forEach((li,i)=>{
+    li.classList.remove('active','done','err');
+    if (error && i===Math.max(idx,0)) { li.classList.add('err'); return; }
+    if (key==='done' || i<idx) li.classList.add('done');
+    else if (i===idx) li.classList.add('active');
+  });
+}
+
+$('#form').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  if(!$('#file').files.length) return;
+  $('#go').disabled = true; $('#go').textContent = 'Processing…';
+  $('#steps').hidden = false; paintSteps('upload');
+  $('#status').className = 'statusbox'; $('#status').textContent = 'Uploading…';
+
+  let jobId;
+  try{
+    const r = await (await fetch('/api/process',{method:'POST',body:fd})).json();
+    if(r.error) throw new Error(r.error);
+    jobId = r.jobId;
+  }catch(err){ return fail(err.message); }
+
+  const poll = setInterval(async ()=>{
+    let job;
+    try { job = await (await fetch('/api/job/'+jobId)).json(); } catch { return; }
+    $('#status').textContent = job.stage || '';
+    if(job.status==='error'){ clearInterval(poll); return fail(job.error); }
+    paintSteps(STAGE_KEY(job.stage||''));
+    if(job.status==='done'){
+      clearInterval(poll);
+      paintSteps('done');
+      $('#status').textContent = 'Done ✓  “'+(job.title||'')+'” added to the library.';
+      $('#go').disabled = false; $('#go').textContent = 'Process resource';
+      e.target.reset();
+      await loadLibrary();
+      await loadTracker();
+      if(job.file) openDoc(job.file);
+    }
+  }, 1500);
+
+  function fail(msg){
+    paintSteps(STAGE_KEY($('#status').textContent), true);
+    $('#status').className = 'statusbox err';
+    $('#status').textContent = 'Error: ' + msg;
+    $('#go').disabled = false; $('#go').textContent = 'Process resource';
+  }
+});
+
+loadLibrary();
+</script>
+</body>
+</html>
